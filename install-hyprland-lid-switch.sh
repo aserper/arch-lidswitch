@@ -26,6 +26,10 @@ HYPR_CONFIG_DIR="$HOME/.config/hypr"
 SCRIPTS_DIR="$HYPR_CONFIG_DIR/scripts"
 SYSTEMD_USER_DIR="$HOME/.config/systemd/user"
 
+# Global variables
+laptop_monitor=""
+external_monitor=""
+
 ################################################################################
 # Utility Functions
 ################################################################################
@@ -61,21 +65,13 @@ check_hyprland() {
 
 # Detect laptop and external monitors
 detect_monitors() {
-    local laptop_monitor=""
-    local external_monitor=""
+    local monitor_list=""
     
     # Get monitor information from hyprctl
-    while IFS= read -r line; do
-        if [[ $line =~ ^Monitor\ ([^\ ]+) ]]; then
-            local monitor_name="${BASH_REMATCH[1]}"
-            if [[ $monitor_name =~ ^eDP ]]; then
-                laptop_monitor="$monitor_name"
-            elif [[ $monitor_name =~ ^(DP|HDMI|USB-C) ]]; then
-                external_monitor="$monitor_name"
-                break  # Use first external monitor found
-            fi
-        fi
-    done < <(hyprctl monitors)
+    monitor_list=$(hyprctl monitors | awk '/Monitor / {print $2}')
+
+    laptop_monitor=$(grep -m1 "^eDP" <<<"${monitor_list}")
+    external_monitor=$(grep -m1 -E "^(DP|HDMI|USB-C)" <<<"${monitor_list}")
     
     if [[ -z "$laptop_monitor" ]]; then
         log_error "Could not detect laptop monitor (eDP-*)"
@@ -88,8 +84,6 @@ detect_monitors() {
     else
         log_info "No external monitor currently connected"
     fi
-    
-    echo "$laptop_monitor"
 }
 
 # Create directories if they don't exist
@@ -368,8 +362,8 @@ main() {
     check_hyprland
     
     # Detect monitors
-    local laptop_monitor
-    laptop_monitor=$(detect_monitors)
+    log_info "Detecting Monitors..."
+    detect_monitors
     
     # Test lid detection
     test_lid_detection
