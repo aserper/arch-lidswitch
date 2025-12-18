@@ -40,14 +40,14 @@ An automatic lid switch handler for Hyprland that intelligently manages monitor 
 ### Quick Install
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/aserper/hyprland-lid-switch/main/install-hyprland-lid-switch.sh | bash
+curl -fsSL https://raw.githubusercontent.com/aserper/arch-lidswitch/main/install-hyprland-lid-switch.sh | bash
 ```
 
 ### Manual Install
 
 1. **Download the installer**:
    ```bash
-   wget https://raw.githubusercontent.com/aserper/hyprland-lid-switch/main/install-hyprland-lid-switch.sh
+   wget https://raw.githubusercontent.com/aserper/arch-lidswitch/main/install-hyprland-lid-switch.sh
    chmod +x install-hyprland-lid-switch.sh
    ```
 
