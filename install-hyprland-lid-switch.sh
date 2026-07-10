@@ -123,17 +123,17 @@ get_external_displays() {
 enable_monitor() {
   local monitor="$1"
 
-  log_message "Enabling monitor: $monitor"
+  log_message "Enabling monitor: $monitor."
 
-  hyprctl dispatch "hl.dsp.dpms({ action = \"enable\", monitor = \"${monitor}\" })" || log_message "Failed to enable ${monitor}"
+  hyprctl dispatch "hl.dsp.dpms({ action = \"enable\", monitor = \"${monitor}\" })" || log_message "Failed to enable ${monitor}."
 }
 
 disable_monitor() {
   local monitor="$1"
 
-  log_message "Disabling monitor: $monitor"
+  log_message "Disabling monitor: $monitor."
 
-  hyprctl dispatch "hl.dsp.dpms({ action = \"disable\", monitor = \"${monitor}\" })" || log_message "Failed to disable ${monitor}"
+  hyprctl dispatch "hl.dsp.dpms({ action = \"disable\", monitor = \"${monitor}\" })" || log_message "Failed to disable ${monitor}."
 }
 
 handle_lid_close() {
@@ -142,7 +142,7 @@ handle_lid_close() {
     mapfile -t external_displays < <(get_external_displays)
 
     if (( ${#external_displays[@]} > 0 )); then
-        log_message "External monitors detected: ${external_displays[*]}"
+        log_message "External monitors detected: ${external_displays[*]}."
 
         disable_monitor "$LAPTOP_DISPLAY"
 
