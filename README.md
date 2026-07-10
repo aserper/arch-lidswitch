@@ -195,10 +195,11 @@ hyprctl keyword monitor "$CURRENT_EXTERNAL,5120x1440@144,1440x0,1"
 ```
 
 #### Hyprland 0.55+
-Set each of your monitor's resolution in your `hyprland.lua` file:
+Set each monitor's resolution and order in your `hyprland.lua` file:
 ```bash
 hl.monitor({ output = "eDP-1", mode = "2880x1920", position = "0x0", scale = 2 })
-hl.monitor({ output = "DP-2", mode = "5120x1440", position = "1440x0", scale = 1 })
+hl.monitor({ output = "HDMI-1", mode = "5120x1440", position = "1440x0", scale = 1 })
+hl.monitor({ output = "HDMI-2", mode = "5120x1440", position = "2880x0", scale = 1 })
 ```
 
 ### Logging
