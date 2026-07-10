@@ -123,17 +123,17 @@ get_external_displays() {
 enable_monitor() {
   local monitor="$1"
 
-  log_message "Enabling monitor: $monitor."
+  log_message "Enabling monitor: $monitor"
 
-  hyprctl dispatch "hl.dsp.dpms({ action = \"enable\", monitor = \"${monitor}\" })" || log_message "Failed to enable ${monitor}."
+  hyprctl dispatch "hl.dsp.dpms({ action = \"enable\", monitor = \"${monitor}\" })"|| log_message "Failed to enable ${monitor}"
 }
 
 disable_monitor() {
   local monitor="$1"
 
-  log_message "Disabling monitor: $monitor."
+  log_message "Disabling monitor: $monitor"
 
-  hyprctl dispatch "hl.dsp.dpms({ action = \"disable\", monitor = \"${monitor}\" })" || log_message "Failed to disable ${monitor}."
+  hyprctl dispatch "hl.dsp.dpms({ action = \"disable\", monitor = \"${monitor}\" })" || log_message "Failed to disable ${monitor}"
 }
 
 handle_lid_close() {
@@ -142,7 +142,7 @@ handle_lid_close() {
     mapfile -t external_displays < <(get_external_displays)
 
     if (( ${#external_displays[@]} > 0 )); then
-        log_message "External monitors detected: ${external_displays[*]}."
+        log_message "External monitors detected: ${external_displays[*]}"
 
         disable_monitor "$LAPTOP_DISPLAY"
 
@@ -150,10 +150,11 @@ handle_lid_close() {
             enable_monitor "$monitor"
         done
 
-        log_message "Laptop display disabled; external monitors active."
+        log_message "Laptop display disabled; ${external_displays[*]} remain(s) as primary."
     else
-        log_message "No external monitors detected; hibernating system."
-        systemctl hibernate
+        log_message "No external monitor detected; suspending system"
+        # TODO: Figure out correct suspend command
+        # systemctl hibernate
     fi
 
 }
@@ -165,11 +166,11 @@ handle_lid_open() {
 
     if [[ -n "$external_displays" ]]; then
         log_message "External monitors detected: $external_displays. Setting up multi-monitor configuration."
-        hyprctl dispatch "hl.dsp.dpms({ action = \"enable\", monitor = \"${LAPTOP_DISPLAY}\" })" || log_message "Failed to enable laptop display." 
-        log_message "Multi-monitor setup restored with $external_displays."
+        hyprctl dispatch "hl.dsp.dpms({ action = \"enable\", monitor = \"${LAPTOP_DISPLAY}\" })" || log_message "Failed to enable laptop display" 
+        log_message "Multi-monitor setup restored with $external_displays"
     else
-        log_message "No external monitors detected; enabling laptop display."
-        hyprctl dispatch "hl.dsp.dpms({ action = \"enable\", monitor = \"${LAPTOP_DISPLAY}\" })" || log_message "Failed to enable laptop display." 
+        log_message "No external monitors; enabling laptop display only."
+        hyprctl dispatch "hl.dsp.dpms({ action = \"enable\", monitor = \"${LAPTOP_DISPLAY}\" })" || log_message "Failed to enable laptop display" 
     fi
 
 }
