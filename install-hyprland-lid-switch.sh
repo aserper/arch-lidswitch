@@ -22,6 +22,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Configuration
+USER=$(whoami)
 HYPR_CONFIG_DIR="$HOME/.config/hypr"
 SCRIPTS_DIR="$HYPR_CONFIG_DIR/scripts"
 SYSTEMD_USER_DIR="$HOME/.config/systemd/user"
@@ -140,6 +141,8 @@ disable_monitor() {
 handle_lid_close() {
     log_message "Lid closed - checking for external monitors"
 
+    sleep 1
+
     mapfile -t external_displays < <(get_external_displays)
 
     if (( ${#external_displays[@]} > 0 )); then
@@ -162,6 +165,8 @@ handle_lid_close() {
 handle_lid_open() {
     log_message "Lid opened - re-enabling laptop display"
     
+    sleep 1
+
     local external_displays=$(get_external_displays)
 
     if [[ -n "$external_displays" ]]; then
@@ -281,6 +286,7 @@ After=graphical-session.target
 
 [Service]
 Type=simple
+User=$USER
 ExecStart=$SCRIPTS_DIR/lid-monitor.sh
 Restart=always
 RestartSec=2
