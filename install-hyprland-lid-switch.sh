@@ -117,6 +117,7 @@ get_lid_state() {
 }
 
 get_external_displays() {
+    # Dynamically get the names for the external displays
     hyprctl monitors | awk '/^Monitor / {print $2}' | grep -v "^${LAPTOP_DISPLAY}$"
 }
 
