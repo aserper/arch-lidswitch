@@ -11,18 +11,18 @@ An automatic lid switch handler for Hyprland that intelligently manages monitor 
 - 🔧 **Zero Configuration**: Works out of the box after installation
 - 📝 **Comprehensive Logging**: Debug-friendly logs for troubleshooting
 - 🔁 **Automatic Startup**: Systemd user service starts with your session
-- 💤 **Smart Power Management**: Hibernates when lid closes without external monitor
+- 💤 **Smart Power Management**: Hibernates when lid closes without any external monitors
 
 ## How It Works
 
 ### Lid Closed + External Monitor Connected
 - Disables laptop internal display
-- External monitor becomes the primary display
+- External monitors becomes the primary displays
 - All workspaces remain accessible
 
 ### Lid Opened
 - Re-enables laptop internal display  
-- Restores dual monitor configuration
+- Restores multi-monitor configuration
 - Maintains your workspace layout
 
 ### Lid Closed + No External Monitor
