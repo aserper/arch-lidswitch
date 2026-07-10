@@ -1,6 +1,7 @@
 # Hyprland Lid Switch Handler
 
-An automatic lid switch handler for Hyprland that intelligently manages monitor configuration when using laptops with external displays.
+An automatic lid switch handler for Hyprland that intelligently manages monitor configuration when using a laptop
+with external displays.
 
 ## Features
 
