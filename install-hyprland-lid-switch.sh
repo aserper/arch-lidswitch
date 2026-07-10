@@ -152,9 +152,8 @@ handle_lid_close() {
 
         log_message "Laptop display disabled; external monitors active."
     else
-        log_message "No external monitors detected, suspending system"
-        # TODO: Figure out correct suspend command
-        # systemctl hibernate
+        log_message "No external monitors detected; hibernating system."
+        systemctl hibernate
     fi
 
 }
