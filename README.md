@@ -8,7 +8,7 @@ with external displays.
 - 🔄 **Automatic Monitor Management**: Seamlessly switches between laptop and external monitors based on lid state
 - 🖥️ **Smart Detection**: Automatically detects laptop screen (eDP-\*) and external monitors (DP-\*/HDMI-\*/USB-C-\*)
 - ⚡ **Instant Response**: Real-time lid state monitoring with ~1 second response time  
-- 🛡️ **Safe Implementation**: Uses Hyprland's native `hyprctl` commands - no dangerous systemd modifications
+- 🛡️ **Safe Implementation**: Uses Hyprland's native `hyprctl` commands - no dangerous `systemd` modifications
 - 🔧 **Zero Configuration**: Works out of the box after installation
 - 📝 **Comprehensive Logging**: Debug-friendly logs for troubleshooting
 - 🔁 **Automatic Startup**: Systemd user service starts with your session
