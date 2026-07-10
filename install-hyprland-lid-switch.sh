@@ -116,37 +116,63 @@ get_lid_state() {
     cat /proc/acpi/button/lid/*/state 2>/dev/null | grep -q "closed" && echo "closed" || echo "open"
 }
 
-get_external_display() {
-    # Dynamically get the external display name
-    hyprctl monitors | grep -E "^Monitor (DP|HDMI|USB-C)" | grep -v "$LAPTOP_DISPLAY" | head -1 | cut -d' ' -f2
+get_external_displays() {
+    hyprctl monitors | awk '/^Monitor / {print $2}' | grep -v "^${LAPTOP_DISPLAY}$"
+}
+
+enable_monitor() {
+  local monitor="$1"
+
+  log_message "Enabling monitor: $monitor"
+
+  hyprctl dispatch "hl.dsp.dpms({ action = \"enable\", monitor = \"${monitor}\" })" || log_message "Failed to enable ${monitor}"
+}
+
+disable_monitor() {
+  local monitor="$1"
+
+  log_message "Disabling monitor: $monitor"
+
+  hyprctl dispatch "hl.dsp.dpms({ action = \"disable\", monitor = \"${monitor}\" })" || log_message "Failed to disable ${monitor}"
 }
 
 handle_lid_close() {
-    log_message "Lid closed - checking for external monitor"
-    
-    CURRENT_EXTERNAL=$(get_external_display)
-    if [[ -n "$CURRENT_EXTERNAL" ]]; then
-        log_message "External monitor detected: $CURRENT_EXTERNAL, disabling laptop display"
-        hyprctl keyword monitor "$LAPTOP_DISPLAY,disable" || log_message "Failed to disable laptop display"
-        log_message "Laptop display disabled, $CURRENT_EXTERNAL remains as primary"
+    log_message "Lid closed - checking for external monitors"
+
+    mapfile -t external_displays < <(get_external_displays)
+
+    if (( ${#external_displays[@]} > 0 )); then
+        log_message "External monitors detected: ${external_displays[*]}"
+
+        disable_monitor "$LAPTOP_DISPLAY"
+
+        for monitor in "${external_displays[@]}"; do
+            enable_monitor "$monitor"
+        done
+
+        log_message "Laptop display disabled; external monitors active."
     else
-        log_message "No external monitor detected, hibernating system"
-        systemctl hibernate
+        log_message "No external monitors detected, suspending system"
+        # TODO: Figure out correct suspend command
+        # systemctl hibernate
     fi
+
 }
 
 handle_lid_open() {
     log_message "Lid opened - re-enabling laptop display"
     
-    CURRENT_EXTERNAL=$(get_external_display)
-    if [[ -n "$CURRENT_EXTERNAL" ]]; then
-        log_message "External monitor detected: $CURRENT_EXTERNAL, setting up dual monitor configuration"
-        hyprctl keyword monitor "$LAPTOP_DISPLAY,2880x1920@120,0x0,2" || log_message "Failed to enable laptop display"
-        log_message "Dual monitor setup restored with $CURRENT_EXTERNAL"
+    local external_displays=$(get_external_displays)
+
+    if [[ -n "$external_displays" ]]; then
+        log_message "External monitors detected: $external_displays. Setting up multi-monitor configuration."
+        hyprctl dispatch "hl.dsp.dpms({ action = \"enable\", monitor = \"${LAPTOP_DISPLAY}\" })" || log_message "Failed to enable laptop display." 
+        log_message "Multi-monitor setup restored with $external_displays."
     else
-        log_message "No external monitor, enabling laptop display only"
-        hyprctl keyword monitor "$LAPTOP_DISPLAY,2880x1920@120,0x0,2" || log_message "Failed to enable laptop display"
+        log_message "No external monitors detected; enabling laptop display."
+        hyprctl dispatch "hl.dsp.dpms({ action = \"enable\", monitor = \"${LAPTOP_DISPLAY}\" })" || log_message "Failed to enable laptop display." 
     fi
+
 }
 
 case "$1" in
