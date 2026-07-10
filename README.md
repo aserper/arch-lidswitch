@@ -15,7 +15,7 @@ An automatic lid switch handler for Hyprland that intelligently manages monitor 
 
 ## How It Works
 
-### Lid Closed + External Monitor Connected
+### Lid Closed + External Monitors Connected
 - Disables laptop internal display
 - External monitors becomes the primary displays
 - All workspaces remain accessible
@@ -25,7 +25,7 @@ An automatic lid switch handler for Hyprland that intelligently manages monitor 
 - Restores multi-monitor configuration
 - Maintains your workspace layout
 
-### Lid Closed + No External Monitor
+### Lid Closed + No External Monitors
 - Hibernates the system automatically
 
 ## Requirements
@@ -37,26 +37,28 @@ An automatic lid switch handler for Hyprland that intelligently manages monitor 
 
 ## Installation
 
-### Quick Install
-
+1. **Clone the repository**:
 ```bash
-curl -fsSL https://raw.githubusercontent.com/aserper/hyprland-lid-switch/main/install-hyprland-lid-switch.sh | bash
+git clone https://github.com/aserper/arch-lidswitch
 ```
 
-### Manual Install
+2. **Change to the repository directory**:
+```bash
+cd arch-lidswitch
+```
 
-1. **Download the installer**:
-   ```bash
-   wget https://raw.githubusercontent.com/aserper/hyprland-lid-switch/main/install-hyprland-lid-switch.sh
-   chmod +x install-hyprland-lid-switch.sh
-   ```
+3. **Make the script executable**:
+```bash
+chmod +x install-hyprland-lid-switch.sh # Hyprland <= 0.54
+chmod +x install-hyprland-lid-switch-lua.sh # Hyprland 0.55+
+```
 
-2. **Run the installer**:
-   ```bash
-   ./install-hyprland-lid-switch.sh
-   ```
-
-3. **Test the installation**:
+4. **Run the script**:
+```bash
+./install-hyprland-lid-switch.sh # Hyprland <= 0.54
+./install-hyprland-lid-switch-lua.sh # Hyprland 0.55+
+```
+5. **Test the installation**:
    Close your laptop lid to verify it works!
 
 ## What Gets Installed
@@ -184,20 +186,18 @@ journalctl --user -u lid-monitor.service -f
 
 Edit `~/.config/hypr/scripts/lid-switch.sh` to customize monitor settings:
 
+#### Hyprland <= 0.54
+In the `handle_lid_open()` function, modify these lines:
 ```bash
-# In handle_lid_open() function, modify these lines:
 hyprctl keyword monitor "$LAPTOP_DISPLAY,2880x1920@120,0x0,2"
 hyprctl keyword monitor "$CURRENT_EXTERNAL,5120x1440@144,1440x0,1"
 ```
 
-### Response Timing
-
-Adjust the polling interval in `~/.config/hypr/scripts/lid-monitor.sh`:
-
+#### Hyprland 0.55+
+Set each of your monitor's resolution in your `hyprland.lua` file:
 ```bash
-# Change sleep duration (default: 1 second)
-sleep 0.5  # For faster response
-sleep 2    # For less CPU usage
+hl.monitor({ output = "eDP-1", mode = "2880x1920", position = "0x0", scale = 2 })
+hl.monitor({ output = "DP-2", mode = "5120x1440", position = "1440x0", scale = 1 })
 ```
 
 ### Logging
