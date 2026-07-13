@@ -112,12 +112,17 @@ log_message() {
     echo "$(date): $1" >> "$LOG_FILE"
 }
 
+get_hyprland_instance() {
+    hyprctl instances -j | jq -r '.[0].instance'
+}
+
+export HYPRLAND_INSTANCE_SIGNATURE="$(get_hyprland_instance)"
+
 get_lid_state() {
     cat /proc/acpi/button/lid/*/state 2>/dev/null | grep -q "closed" && echo "closed" || echo "open"
 }
 
 get_external_displays() {
-    # Dynamically get the names for the external displays
     hyprctl monitors | awk '/^Monitor / {print $2}' | grep -v "^${LAPTOP_DISPLAY}$"
 }
 
@@ -126,7 +131,13 @@ enable_monitor() {
 
   log_message "Enabling monitor: $monitor"
 
-  hyprctl dispatch "hl.dsp.dpms({ action = \"enable\", monitor = \"${monitor}\" })"|| log_message "Failed to enable ${monitor}"
+  output=$(hyprctl dispatch "hl.dsp.dpms({ action = \"enable\", monitor = \"${monitor}\" })" 2>&1)
+
+  ret=$?
+
+  log_message "DPMS enable result for ${monitor}: ${output}"
+
+  (( ret != 0 )) && log_message "Failed to enable ${monitor}"
 }
 
 disable_monitor() {
@@ -134,13 +145,17 @@ disable_monitor() {
 
   log_message "Disabling monitor: $monitor"
 
-  hyprctl dispatch "hl.dsp.dpms({ action = \"disable\", monitor = \"${monitor}\" })" || log_message "Failed to disable ${monitor}"
+  output=$(hyprctl dispatch "hl.dsp.dpms({ action = \"disable\", monitor = \"${monitor}\" })" 2>&1)
+
+  ret=$?
+
+  log_message "DPMS enable result for ${monitor}: ${output}"
+
+  (( ret != 0 )) && log_message "Failed to enable ${monitor}"
 }
 
 handle_lid_close() {
     log_message "Lid closed - checking for external monitors"
-
-    sleep 1
 
     mapfile -t external_displays < <(get_external_displays)
 
@@ -156,25 +171,23 @@ handle_lid_close() {
         log_message "Laptop display disabled; ${external_displays[*]} remain(s) as primary."
     else
         log_message "No external monitors detected; hibernating system."
-        systemctl hibernate
+        systemctl hibernate 
     fi
 
 }
 
 handle_lid_open() {
     log_message "Lid opened - re-enabling laptop display"
-    
-    sleep 1
 
     local external_displays=$(get_external_displays)
 
     if [[ -n "$external_displays" ]]; then
         log_message "External monitors detected: $external_displays. Setting up multi-monitor configuration."
-        hyprctl dispatch "hl.dsp.dpms({ action = \"enable\", monitor = \"${LAPTOP_DISPLAY}\" })" || log_message "Failed to enable laptop display" 
+        enable_monitor "${LAPTOP_DISPLAY}"
         log_message "Multi-monitor setup restored with $external_displays"
     else
         log_message "No external monitors; enabling laptop display only."
-        hyprctl dispatch "hl.dsp.dpms({ action = \"enable\", monitor = \"${LAPTOP_DISPLAY}\" })" || log_message "Failed to enable laptop display" 
+        enable_monitor "${LAPTOP_DISPLAY}"
     fi
 
 }
