@@ -127,31 +127,31 @@ get_external_displays() {
 }
 
 enable_monitor() {
-  local monitor="$1"
+    local monitor="$1"
 
-  log_message "Enabling monitor: $monitor"
+    log_message "Enabling monitor: $monitor"
 
-  output=$(hyprctl dispatch "hl.dsp.dpms({ action = \"enable\", monitor = \"${monitor}\" })" 2>&1)
+    output=$(hyprctl dispatch "hl.dsp.dpms({ action = \"enable\", monitor = \"${monitor}\" })" 2>&1)
 
-  ret=$?
+    ret=$?
 
-  log_message "DPMS enable result for ${monitor}: ${output}"
+    log_message "DPMS enable result for ${monitor}: ${output}"
 
-  (( ret != 0 )) && log_message "Failed to enable ${monitor}"
+    (( ret != 0 )) && log_message "Failed to enable ${monitor}"
 }
 
 disable_monitor() {
-  local monitor="$1"
+    local monitor="$1"
 
-  log_message "Disabling monitor: $monitor"
+    log_message "Disabling monitor: $monitor"
 
-  output=$(hyprctl dispatch "hl.dsp.dpms({ action = \"disable\", monitor = \"${monitor}\" })" 2>&1)
+    output=$(hyprctl dispatch "hl.dsp.dpms({ action = \"disable\", monitor = \"${monitor}\" })" 2>&1)
 
-  ret=$?
+    ret=$?
 
-  log_message "DPMS enable result for ${monitor}: ${output}"
+    log_message "DPMS enable result for ${monitor}: ${output}"
 
-  (( ret != 0 )) && log_message "Failed to enable ${monitor}"
+    (( ret != 0 )) && log_message "Failed to enable ${monitor}"
 }
 
 handle_lid_close() {
