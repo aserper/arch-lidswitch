@@ -2,7 +2,7 @@
 
 ################################################################################
 # Hyprland Lid Switch Installer
-#
+# 
 # This script installs an automatic lid switch handler for Hyprland that:
 # - Disables laptop display when lid is closed (with external monitor connected)
 # - Re-enables laptop display when lid is opened
@@ -66,18 +66,18 @@ check_hyprland() {
 # Detect laptop and external monitors
 detect_monitors() {
     local monitor_list=""
-
+    
     # Get monitor information from hyprctl
     monitor_list=$(hyprctl monitors | awk '/Monitor / {print $2}')
 
     laptop_monitor=$(grep -m1 "^eDP" <<<"${monitor_list}")
     external_monitor=$(grep -m1 -E "^(DP|HDMI|USB-C)" <<<"${monitor_list}")
-
+    
     if [[ -z "$laptop_monitor" ]]; then
         log_error "Could not detect laptop monitor (eDP-*)"
         exit 1
     fi
-
+    
     log_info "Detected laptop monitor: $laptop_monitor"
     if [[ -n "$external_monitor" ]]; then
         log_info "Detected external monitor: $external_monitor"
@@ -89,19 +89,19 @@ detect_monitors() {
 # Create directories if they don't exist
 create_directories() {
     log_info "Creating necessary directories..."
-
+    
     mkdir -p "$SCRIPTS_DIR"
     mkdir -p "$SYSTEMD_USER_DIR"
-
+    
     log_success "Directories created"
 }
 
 # Install the lid switch script
 install_lid_switch_script() {
     local laptop_monitor="$1"
-
+    
     log_info "Installing lid switch script..."
-
+    
     cat > "$SCRIPTS_DIR/lid-switch.sh" << 'EOF'
 #!/bin/bash
 
@@ -112,41 +112,84 @@ log_message() {
     echo "$(date): $1" >> "$LOG_FILE"
 }
 
+get_hyprland_instance() {
+    hyprctl instances -j | jq -r '.[0].instance'
+}
+
+export HYPRLAND_INSTANCE_SIGNATURE="$(get_hyprland_instance)"
+
 get_lid_state() {
     cat /proc/acpi/button/lid/*/state 2>/dev/null | grep -q "closed" && echo "closed" || echo "open"
 }
 
-get_external_display() {
-    # Dynamically get the external display name
-    hyprctl monitors | grep -E "^Monitor (DP|HDMI|USB-C)" | grep -v "$LAPTOP_DISPLAY" | head -1 | cut -d' ' -f2
+get_external_displays() {
+    hyprctl monitors | awk '/^Monitor / {print $2}' | grep -v "^${LAPTOP_DISPLAY}$"
+}
+
+enable_monitor() {
+    local monitor="$1"
+
+    log_message "Enabling monitor: $monitor"
+
+    output=$(hyprctl dispatch "hl.dsp.dpms({ action = \"enable\", monitor = \"${monitor}\" })" 2>&1)
+
+    ret=$?
+
+    log_message "DPMS enable result for ${monitor}: ${output}"
+
+    (( ret != 0 )) && log_message "Failed to enable ${monitor}"
+}
+
+disable_monitor() {
+    local monitor="$1"
+
+    log_message "Disabling monitor: $monitor"
+
+    output=$(hyprctl dispatch "hl.dsp.dpms({ action = \"disable\", monitor = \"${monitor}\" })" 2>&1)
+
+    ret=$?
+
+    log_message "DPMS enable result for ${monitor}: ${output}"
+
+    (( ret != 0 )) && log_message "Failed to enable ${monitor}"
 }
 
 handle_lid_close() {
-    log_message "Lid closed - checking for external monitor"
+    log_message "Lid closed - checking for external monitors"
 
-    CURRENT_EXTERNAL=$(get_external_display)
-    if [[ -n "$CURRENT_EXTERNAL" ]]; then
-        log_message "External monitor detected: $CURRENT_EXTERNAL, disabling laptop display"
-        hyprctl keyword monitor "$LAPTOP_DISPLAY,disable" || log_message "Failed to disable laptop display"
-        log_message "Laptop display disabled, $CURRENT_EXTERNAL remains as primary"
+    mapfile -t external_displays < <(get_external_displays)
+
+    if (( ${#external_displays[@]} > 0 )); then
+        log_message "External monitors detected: ${external_displays[*]}"
+
+        disable_monitor "$LAPTOP_DISPLAY"
+
+        for monitor in "${external_displays[@]}"; do
+            enable_monitor "$monitor"
+        done
+
+        log_message "Laptop display disabled; ${external_displays[*]} remain(s) as primary."
     else
-        log_message "No external monitor detected, hibernating system"
-        systemctl hibernate
+        log_message "No external monitors detected; hibernating system."
+        systemctl hibernate 
     fi
+
 }
 
 handle_lid_open() {
     log_message "Lid opened - re-enabling laptop display"
 
-    CURRENT_EXTERNAL=$(get_external_display)
-    if [[ -n "$CURRENT_EXTERNAL" ]]; then
-        log_message "External monitor detected: $CURRENT_EXTERNAL, setting up dual monitor configuration"
-        hyprctl keyword monitor "$LAPTOP_DISPLAY,2880x1920@120,0x0,2" || log_message "Failed to enable laptop display"
-        log_message "Dual monitor setup restored with $CURRENT_EXTERNAL"
+    local external_displays=$(get_external_displays)
+
+    if [[ -n "$external_displays" ]]; then
+        log_message "External monitors detected: $external_displays. Setting up multi-monitor configuration."
+        enable_monitor "${LAPTOP_DISPLAY}"
+        log_message "Multi-monitor setup restored with $external_displays"
     else
-        log_message "No external monitor, enabling laptop display only"
-        hyprctl keyword monitor "$LAPTOP_DISPLAY,2880x1920@120,0x0,2" || log_message "Failed to enable laptop display"
+        log_message "No external monitors; enabling laptop display only."
+        enable_monitor "${LAPTOP_DISPLAY}"
     fi
+
 }
 
 case "$1" in
@@ -159,7 +202,7 @@ case "$1" in
     *)
         lid_state=$(get_lid_state)
         log_message "Auto-detecting lid state: $lid_state"
-
+        
         if [[ "$lid_state" == "closed" ]]; then
             handle_lid_close
         else
@@ -171,17 +214,17 @@ EOF
 
     # Replace placeholder with actual laptop monitor
     sed -i "s/LAPTOP_MONITOR_PLACEHOLDER/$laptop_monitor/g" "$SCRIPTS_DIR/lid-switch.sh"
-
+    
     # Make script executable
     chmod +x "$SCRIPTS_DIR/lid-switch.sh"
-
+    
     log_success "Lid switch script installed at $SCRIPTS_DIR/lid-switch.sh"
 }
 
 # Install the lid monitor script
 install_lid_monitor_script() {
     log_info "Installing lid monitor script..."
-
+    
     cat > "$SCRIPTS_DIR/lid-monitor.sh" << 'EOF'
 #!/bin/bash
 
@@ -220,34 +263,34 @@ log_message "Lid monitor started, initial state: $previous_state"
 
 while true; do
     current_state=$(get_lid_state)
-
+    
     if [[ "$current_state" != "$previous_state" && "$current_state" != "unknown" ]]; then
         log_message "Lid state changed from $previous_state to $current_state"
-
+        
         # Call the lid switch script with the appropriate argument
         if [[ "$current_state" == "closed" ]]; then
             "$LID_SWITCH_SCRIPT" close
         elif [[ "$current_state" == "open" ]]; then
             "$LID_SWITCH_SCRIPT" open
         fi
-
+        
         previous_state="$current_state"
     fi
-
+    
     sleep 1
 done
 EOF
-
+    
     # Make script executable
     chmod +x "$SCRIPTS_DIR/lid-monitor.sh"
-
+    
     log_success "Lid monitor script installed at $SCRIPTS_DIR/lid-monitor.sh"
 }
 
 # Install the systemd service
 install_systemd_service() {
     log_info "Installing systemd user service..."
-
+    
     cat > "$SYSTEMD_USER_DIR/lid-monitor.service" << EOF
 [Unit]
 Description=Hyprland Lid Switch Monitor
@@ -255,6 +298,7 @@ After=graphical-session.target
 
 [Service]
 Type=simple
+User=$USER
 ExecStart=$SCRIPTS_DIR/lid-monitor.sh
 Restart=always
 RestartSec=2
@@ -263,23 +307,23 @@ Environment="DISPLAY=:0"
 [Install]
 WantedBy=default.target
 EOF
-
+    
     log_success "Systemd service installed at $SYSTEMD_USER_DIR/lid-monitor.service"
 }
 
 # Enable and start the service
 enable_service() {
     log_info "Enabling and starting lid monitor service..."
-
+    
     # Reload systemd daemon
     systemctl --user daemon-reload
-
+    
     # Enable service to start on boot
     systemctl --user enable lid-monitor.service
-
+    
     # Start service now
     systemctl --user start lid-monitor.service
-
+    
     # Check if service started successfully
     if systemctl --user is-active --quiet lid-monitor.service; then
         log_success "Lid monitor service is running"
@@ -293,7 +337,7 @@ enable_service() {
 # Check if lid detection is working
 test_lid_detection() {
     log_info "Testing lid state detection..."
-
+    
     if [[ -f /proc/acpi/button/lid/LID0/state ]]; then
         local lid_state=$(cat /proc/acpi/button/lid/LID0/state 2>/dev/null)
         log_success "Lid state detection working: $lid_state"
@@ -309,15 +353,15 @@ test_lid_detection() {
 # Backup existing files
 backup_existing_files() {
     log_info "Backing up existing files..."
-
+    
     local backup_dir="$HYPR_CONFIG_DIR/scripts/.backup-$(date +%Y%m%d-%H%M%S)"
-
+    
     if [[ -f "$SCRIPTS_DIR/lid-switch.sh" ]] || [[ -f "$SCRIPTS_DIR/lid-monitor.sh" ]]; then
         mkdir -p "$backup_dir"
-
+        
         [[ -f "$SCRIPTS_DIR/lid-switch.sh" ]] && cp "$SCRIPTS_DIR/lid-switch.sh" "$backup_dir/"
         [[ -f "$SCRIPTS_DIR/lid-monitor.sh" ]] && cp "$SCRIPTS_DIR/lid-monitor.sh" "$backup_dir/"
-
+        
         log_success "Existing files backed up to $backup_dir"
     fi
 }
@@ -356,32 +400,32 @@ main() {
     echo "Hyprland Lid Switch Installer"
     echo "=================================="
     echo
-
+    
     # Pre-installation checks
     log_info "Performing pre-installation checks..."
     check_hyprland
-
+    
     # Detect monitors
     log_info "Detecting Monitors..."
     detect_monitors
-
+    
     # Test lid detection
     test_lid_detection
-
+    
     # Backup existing files
     backup_existing_files
-
+    
     # Create directories
     create_directories
-
+    
     # Install scripts and service
     install_lid_switch_script "$laptop_monitor"
     install_lid_monitor_script
     install_systemd_service
-
+    
     # Enable and start service
     enable_service
-
+    
     # Print final instructions
     print_final_instructions
 }

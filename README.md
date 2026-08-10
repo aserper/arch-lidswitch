@@ -1,31 +1,32 @@
 # Hyprland Lid Switch Handler
 
-An automatic lid switch handler for Hyprland that intelligently manages monitor configuration when using laptops with external displays.
+An automatic lid switch handler for Hyprland that intelligently manages monitor configuration when using a laptop
+with external displays.
 
 ## Features
 
 - 🔄 **Automatic Monitor Management**: Seamlessly switches between laptop and external monitors based on lid state
-- 🖥️ **Smart Detection**: Automatically detects laptop screen (eDP-*) and external monitors (DP-*/HDMI-*/USB-C-*)
+- 🖥️ **Smart Detection**: Automatically detects laptop screen (eDP-\*) and external monitors (DP-\*/HDMI-\*/USB-C-\*)
 - ⚡ **Instant Response**: Real-time lid state monitoring with ~1 second response time  
-- 🛡️ **Safe Implementation**: Uses Hyprland's native `hyprctl` commands - no dangerous systemd modifications
+- 🛡️ **Safe Implementation**: Uses Hyprland's native `hyprctl` commands - no dangerous `systemd` modifications
 - 🔧 **Zero Configuration**: Works out of the box after installation
 - 📝 **Comprehensive Logging**: Debug-friendly logs for troubleshooting
 - 🔁 **Automatic Startup**: Systemd user service starts with your session
-- 💤 **Smart Power Management**: Hibernates when lid closes without external monitor
+- 💤 **Smart Power Management**: Hibernates when lid closes without any external monitors
 
 ## How It Works
 
-### Lid Closed + External Monitor Connected
+### Lid Closed + External Monitors Connected
 - Disables laptop internal display
-- External monitor becomes the primary display
+- External monitors becomes the primary displays
 - All workspaces remain accessible
 
 ### Lid Opened
 - Re-enables laptop internal display  
-- Restores dual monitor configuration
+- Restores multi-monitor configuration
 - Maintains your workspace layout
 
-### Lid Closed + No External Monitor
+### Lid Closed + No External Monitors
 - Hibernates the system automatically
 
 ## Requirements
@@ -37,26 +38,28 @@ An automatic lid switch handler for Hyprland that intelligently manages monitor 
 
 ## Installation
 
-### Quick Install
-
+1. **Clone the repository**:
 ```bash
-curl -fsSL https://raw.githubusercontent.com/aserper/hyprland-lid-switch/main/install-hyprland-lid-switch.sh | bash
+git clone https://github.com/aserper/arch-lidswitch
 ```
 
-### Manual Install
+2. **Change to the repository directory**:
+```bash
+cd arch-lidswitch
+```
 
-1. **Download the installer**:
-   ```bash
-   wget https://raw.githubusercontent.com/aserper/hyprland-lid-switch/main/install-hyprland-lid-switch.sh
-   chmod +x install-hyprland-lid-switch.sh
-   ```
+3. **Make the script executable**:
+```bash
+chmod +x install-hyprland-lid-switch.sh # Hyprland <= 0.54
+chmod +x install-hyprland-lid-switch-lua.sh # Hyprland 0.55+
+```
 
-2. **Run the installer**:
-   ```bash
-   ./install-hyprland-lid-switch.sh
-   ```
-
-3. **Test the installation**:
+4. **Run the script**:
+```bash
+./install-hyprland-lid-switch.sh # Hyprland <= 0.54
+./install-hyprland-lid-switch-lua.sh # Hyprland 0.55+
+```
+5. **Test the installation**:
    Close your laptop lid to verify it works!
 
 ## What Gets Installed
@@ -184,20 +187,19 @@ journalctl --user -u lid-monitor.service -f
 
 Edit `~/.config/hypr/scripts/lid-switch.sh` to customize monitor settings:
 
+#### Hyprland <= 0.54
+In the `handle_lid_open()` function, modify these lines:
 ```bash
-# In handle_lid_open() function, modify these lines:
 hyprctl keyword monitor "$LAPTOP_DISPLAY,2880x1920@120,0x0,2"
 hyprctl keyword monitor "$CURRENT_EXTERNAL,5120x1440@144,1440x0,1"
 ```
 
-### Response Timing
-
-Adjust the polling interval in `~/.config/hypr/scripts/lid-monitor.sh`:
-
+#### Hyprland 0.55+
+Set each monitor's resolution and order in your `hyprland.lua` file:
 ```bash
-# Change sleep duration (default: 1 second)
-sleep 0.5  # For faster response
-sleep 2    # For less CPU usage
+hl.monitor({ output = "eDP-1", mode = "2880x1920", position = "0x0", scale = 2 })
+hl.monitor({ output = "HDMI-1", mode = "5120x1440", position = "1440x0", scale = 1 })
+hl.monitor({ output = "HDMI-2", mode = "5120x1440", position = "2880x0", scale = 1 })
 ```
 
 ### Logging
